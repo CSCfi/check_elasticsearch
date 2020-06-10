@@ -184,38 +184,30 @@ while test -n "$1"; do
     shift
 done
 
-if [ "$authentication" = "True" ]; then
-    pass="${pass}"
-    user="${user}"
-fi
-
 if [ "$use_ca" = "True" ]; then
-    ca_cert="--ca-certificate=${ca_cert}"
-    c_ca_cert="--cacert=${ca_cert}"
+    ca_cert="--cacert=${ca_cert}"
 fi
 
 if [ "$use_cert" = "True" ]; then
-    cert="--certificate=${cert}"
-    c_cert="--cert=${cert}"
+    cert="--cert=${cert}"
 fi
 
 if [ "$use_key" = "True" ]; then
-    private_key="--private-key=${private_key}"
-    c_private_key="--key=${private_key}"
+    private_key="--key=${private_key}"
 fi
 
 if [ "$use_proxy" = "off" ]; then
-    proxy="--proxy=${use_proxy}"
-    c_add_args+=("--noproxy=*")
+    curl_add_args+=("--noproxy=*")
 fi
 
 if [ "$use_no_check" = "True" ]; then
-    wget_add_args+=("--no-check-certificate")
-    c_add_args+=("--insecure")
+    curl_add_args+=("--insecure")
 fi
 
-if [ "$verbose" != "True" ]; then
-    wget_add_args+=("-q")
+if [ "$verbose" = "True" ]; then
+    curl_add_args+=("--verbose")
+else
+    curl_add_args+=("--silent")
 fi
 
 get_status() {
@@ -223,20 +215,20 @@ get_status() {
     # If authentication via private key ist defined
     if [ -n "${private_key}" ]
     then
-       response="$( curl --connect-timeout 3 --retry 3 ${c_cert} ${private_key} ${scheme}://${hostname}:${port}/${status_page} ${c_add_args[@]} )"
+       response="$( curl --connect-timeout 3 --retry 3 ${cert} ${private_key} ${scheme}://${hostname}:${port}/${status_page} ${curl_add_args[@]} )"
     elif [ "${authentication}" = "True" ]; then
-       response="$( curl --connect-timeout 3 --retry 3 ${c_ca_cert} -u ${user}:${pass} ${scheme}://${hostname}:${port}/${status_page} ${c_add_args[@]} )"
+       response="$( curl --connect-timeout 3 --retry 3 ${ca_cert} -u ${user}:${pass} ${scheme}://${hostname}:${port}/${status_page} ${curl_add_args[@]} )"
     else
-       response="$( curl --connect-timeout 3 --retry 3 ${c_ca_cert} -u ${scheme}://${hostname}:${port}/${status_page} ${c_add_args[@]} )"
+       response="$( curl --connect-timeout 3 --retry 3 ${ca_cert} -u ${scheme}://${hostname}:${port}/${status_page} ${curl_add_args[@]} )"
     fi
 }
 
 get_vals() {
     name=$(echo $response |sed -n -e 's/.*cluster_name\"\:\"//p' |sed -n -e 's/\"\,.*//p')
     status=$(echo $response |sed -n -e 's/.*status\"\:\"//p' |sed -n -e 's/\"\,.*//p')
-    timed_out="$(echo  $response |grep \"timed_out\" | awk '{print $0}' )" #| sed 's|[\r",]||g')"
-    number_nodes=$(echo $response |sed -n -e 's/.*number_nodes\"\://p' |sed -n -e 's/\,.*//p')
-    number_data_nodes=$(echo $response |sed -n -e 's/.*number_data_nodes\"\://p' |sed -n -e 's/\,.*//p')
+    timed_out=$(echo $response |sed -n -e 's/.*timed_out\"\://p' |sed -n -e 's/\,.*//p')
+    number_nodes=$(echo $response |sed -n -e 's/.*number_of_nodes\"\://p' |sed -n -e 's/\,.*//p')
+    number_data_nodes=$(echo $response |sed -n -e 's/.*number_of_data_nodes\"\://p' |sed -n -e 's/\,.*//p')
     active_primary_shards=$(echo $response |sed -n -e 's/.*active_primary_shards\"\://p' |sed -n -e 's/\,.*//p')
     active_shards=$(echo $response |sed -n -e 's/.*active_shards\"\://p' |sed -n -e 's/\,.*//p')
     relocating_shards=$(echo $response |sed -n -e 's/.*relocating_shards\"\://p' |sed -n -e 's/\,.*//p')
