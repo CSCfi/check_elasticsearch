@@ -218,11 +218,11 @@ get_status() {
     # If authentication via private key ist defined
     if [ -n "${private_key}" ]
     then
-       response="`wget -t 3 -T 3 ${cert} ${private_key} $scheme://${hostname}:${port}/${status_page}?pretty=false -qO- ${proxy} ${wget_add_args[@]}`"
+       response="`wget -t 3 -T 3 ${cert} ${private_key} $scheme://${hostname}:${port}/${status_page}?pretty=false -O- ${proxy} ${wget_add_args[@]}`"
     elif [ "${authentication}" = "True" ]; then
-       response="`wget -t 3 -T 3 ${ca_cert} ${user} ${pass} $scheme://${hostname}:${port}/${status_page}?pretty=false -qO- ${proxy} ${wget_add_args[@]}`"
+       response="`wget -t 3 -T 3 ${ca_cert} ${user} ${pass} $scheme://${hostname}:${port}/${status_page}?pretty=false -O- ${proxy} ${wget_add_args[@]}`"
     else
-       response="`wget -t 3 -T 3 ${ca_cert} $scheme://${hostname}:${port}/${status_page}?pretty=false -qO- ${proxy} ${wget_add_args[@]}`"
+       response="`wget -t 3 -T 3 ${ca_cert} $scheme://${hostname}:${port}/${status_page}?pretty=false -O- ${proxy} ${wget_add_args[@]}`"
     fi
 }
 
