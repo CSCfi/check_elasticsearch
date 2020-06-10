@@ -185,28 +185,33 @@ while test -n "$1"; do
 done
 
 if [ "$authentication" = "True" ]; then
-    pass="--password=${pass}"
-    user="--user=${user}"
+    pass="${pass}"
+    user="${user}"
 fi
 
 if [ "$use_ca" = "True" ]; then
     ca_cert="--ca-certificate=${ca_cert}"
+    c_ca_cert="--cacert=${ca_cert}"
 fi
 
 if [ "$use_cert" = "True" ]; then
     cert="--certificate=${cert}"
+    c_cert="--cert=${cert}"
 fi
 
 if [ "$use_key" = "True" ]; then
     private_key="--private-key=${private_key}"
+    c_private_key="--key=${private_key}"
 fi
 
 if [ "$use_proxy" = "off" ]; then
     proxy="--proxy=${use_proxy}"
+    c_add_args+=("--noproxy=*")
 fi
 
 if [ "$use_no_check" = "True" ]; then
     wget_add_args+=("--no-check-certificate")
+    c_add_args+=("--insecure")
 fi
 
 if [ "$verbose" != "True" ]; then
@@ -214,32 +219,30 @@ if [ "$verbose" != "True" ]; then
 fi
 
 get_status() {
-    filename=$(mktemp -u -p "$output_dir" --suffix="-${PROGNAME}")
 
     # If authentication via private key ist defined
     if [ -n "${private_key}" ]
     then
-       wget -t 3 -T 3 ${cert} ${private_key} $scheme://${hostname}:${port}/${status_page}?pretty=true -O ${filename} ${proxy} ${wget_add_args[@]}
+       response="$( curl --connect-timeout 3 --retry 3 ${c_cert} ${private_key} ${scheme}://${hostname}:${port}/${status_page} ${c_add_args[@]} )"
     elif [ "${authentication}" = "True" ]; then
-       wget -t 3 -T 3 ${ca_cert} ${user} ${pass} $scheme://${hostname}:${port}/${status_page}?pretty=true -O ${filename} ${proxy} ${wget_add_args[@]}
+       response="$( curl --connect-timeout 3 --retry 3 ${c_ca_cert} -u ${user}:${pass} ${scheme}://${hostname}:${port}/${status_page} ${c_add_args[@]} )"
     else
-       wget -t 3 -T 3 ${ca_cert} $scheme://${hostname}:${port}/${status_page}?pretty=true -O ${filename} ${proxy} ${wget_add_args[@]}
+       response="$( curl --connect-timeout 3 --retry 3 ${c_ca_cert} -u ${scheme}://${hostname}:${port}/${status_page} ${c_add_args[@]} )"
     fi
 }
 
 get_vals() {
-    name=$(grep '\"cluster_name\" :' ${filename} | awk -F '"' '{print $4}')
-    status=$(grep '\"status\" :' ${filename} | awk -F '"' '{print $4}')
-    timed_out=`grep \"timed_out\" ${filename} | awk '{print $3}' | sed 's|[\r",]||g'`
-    number_nodes=`grep \"number_of_nodes\" ${filename} | awk '{print $3}' | sed 's|[\r",]||g'`
-    number_data_nodes=`grep \"number_of_data_nodes\" ${filename} | awk '{print $3}' | sed 's|[\r",]||g'`
-    active_primary_shards=`grep \"active_primary_shards\" ${filename} | awk '{print $3}' | sed 's|[\r",]||g'`
-    active_shards=`grep \"active_shards\" ${filename} | awk '{print $3}' | sed 's|[\r",]||g'`
-    relocating_shards=`grep \"relocating_shards\" ${filename} | awk '{print $3}' | sed 's|[\r",]||g'`
-    initializing_shards=`grep \"initializing_shards\" ${filename} | awk '{print $3}' | sed 's|[\r",]||g'`
-    delayed_unassigned_shards=`grep \"delayed_unassigned_shards\" ${filename} | awk '{print $3}' | sed 's|[\r",]||g'`
-    unassigned_shards=`grep -w '\"unassigned_shards\"' ${filename} | awk '{print $3}' | sed 's|[\r",]||g'`
-    rm -f ${filename}
+    name=$(echo $response |sed -n -e 's/.*cluster_name\"\:\"//p' |sed -n -e 's/\"\,.*//p')
+    status=$(echo $response |sed -n -e 's/.*status\"\:\"//p' |sed -n -e 's/\"\,.*//p')
+    timed_out="$(echo  $response |grep \"timed_out\" | awk '{print $0}' )" #| sed 's|[\r",]||g')"
+    number_nodes=$(echo $response |sed -n -e 's/.*number_nodes\"\://p' |sed -n -e 's/\,.*//p')
+    number_data_nodes=$(echo $response |sed -n -e 's/.*number_data_nodes\"\://p' |sed -n -e 's/\,.*//p')
+    active_primary_shards=$(echo $response |sed -n -e 's/.*active_primary_shards\"\://p' |sed -n -e 's/\,.*//p')
+    active_shards=$(echo $response |sed -n -e 's/.*active_shards\"\://p' |sed -n -e 's/\,.*//p')
+    relocating_shards=$(echo $response |sed -n -e 's/.*relocating_shards\"\://p' |sed -n -e 's/\,.*//p')
+    initializing_shards=$(echo $response |sed -n -e 's/.*initializing_shards\"\://p' |sed -n -e 's/\,.*//p')
+    delayed_unassigned_shards=$(echo $response |sed -n -e 's/.*delayed_unassigned_shards\"\://p' |sed -n -e 's/\,.*//p')
+    unassigned_shards=$(echo $response |sed -n -e 's/.*unassigned_shards\"\://p' |sed -n -e 's/\,.*//p')
 
     # Determine the Nagios Status and Exit Code
     if [ "$status" = "red" ]; then
@@ -298,15 +301,14 @@ do_graphite() {
 }
 
 # Here we go!
-which wget >/dev/null 2>&1
+which curl >/dev/null 2>&1
 if [ "$?" != "0" ]; then
-    echo "CRITICAL - wget is not installed"
+    echo "CRITICAL - curl is not installed"
     exit $ST_CR
 fi
 get_status
-if [ ! -s "$filename" ]; then
-    echo "CRITICAL - Could not connect to server $hostname"
-    rm -f "$filename"
+if false; then
+    echo "CRITICAL - This should never happen"
     exit $ST_CR
 else
     get_vals
