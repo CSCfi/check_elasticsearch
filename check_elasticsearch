@@ -184,30 +184,33 @@ while test -n "$1"; do
     shift
 done
 
+if [ "$authentication" = "True" ]; then
+    pass="--password=${pass}"
+    user="--user=${user}"
+fi
+
 if [ "$use_ca" = "True" ]; then
-    ca_cert="--cacert=${ca_cert}"
+    ca_cert="--ca-certificate=${ca_cert}"
 fi
 
 if [ "$use_cert" = "True" ]; then
-    cert="--cert=${cert}"
+    cert="--certificate=${cert}"
 fi
 
 if [ "$use_key" = "True" ]; then
-    private_key="--key=${private_key}"
+    private_key="--private-key=${private_key}"
 fi
 
 if [ "$use_proxy" = "off" ]; then
-    curl_add_args+=("--noproxy=*")
+    proxy="--proxy=${use_proxy}"
 fi
 
 if [ "$use_no_check" = "True" ]; then
-    curl_add_args+=("--insecure")
+    wget_add_args+=("--no-check-certificate")
 fi
 
-if [ "$verbose" = "True" ]; then
-    curl_add_args+=("--verbose")
-else
-    curl_add_args+=("--silent")
+if [ "$verbose" != "True" ]; then
+    wget_add_args+=("-q")
 fi
 
 get_status() {
@@ -215,11 +218,11 @@ get_status() {
     # If authentication via private key ist defined
     if [ -n "${private_key}" ]
     then
-       response="$( curl --connect-timeout 3 --retry 3 ${cert} ${private_key} ${scheme}://${hostname}:${port}/${status_page} ${curl_add_args[@]} )"
+       response="`wget -t 3 -T 3 ${cert} ${private_key} $scheme://${hostname}:${port}/${status_page}?pretty=false -qO- ${proxy} ${wget_add_args[@]}`"
     elif [ "${authentication}" = "True" ]; then
-       response="$( curl --connect-timeout 3 --retry 3 ${ca_cert} -u ${user}:${pass} ${scheme}://${hostname}:${port}/${status_page} ${curl_add_args[@]} )"
+       response="`wget -t 3 -T 3 ${ca_cert} ${user} ${pass} $scheme://${hostname}:${port}/${status_page}?pretty=false -qO- ${proxy} ${wget_add_args[@]}`"
     else
-       response="$( curl --connect-timeout 3 --retry 3 ${ca_cert} -u ${scheme}://${hostname}:${port}/${status_page} ${curl_add_args[@]} )"
+       response="`wget -t 3 -T 3 ${ca_cert} $scheme://${hostname}:${port}/${status_page}?pretty=false -qO- ${proxy} ${wget_add_args[@]}`"
     fi
 }
 
@@ -293,14 +296,14 @@ do_graphite() {
 }
 
 # Here we go!
-which curl >/dev/null 2>&1
+which wget >/dev/null 2>&1
 if [ "$?" != "0" ]; then
-    echo "CRITICAL - curl is not installed"
+    echo "CRITICAL - wget is not installed"
     exit $ST_CR
 fi
 get_status
-if false; then
-    echo "CRITICAL - This should never happen"
+if false ; then
+    echo "CRITICAL - This should not be possible $hostname"
     exit $ST_CR
 else
     get_vals
