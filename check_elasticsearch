@@ -298,7 +298,7 @@ do_graphite() {
 # Here we go!
 which wget >/dev/null 2>&1
 if [ "$?" != "0" ]; then
-    echo "CRITICAL - wget is not installed"
+    echo "CRITICAL - Could not connect to server $hostname"
     exit $ST_CR
 fi
 get_status
