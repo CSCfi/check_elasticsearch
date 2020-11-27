@@ -303,7 +303,7 @@ if [ "$?" != "0" ]; then
 fi
 get_status
 if [[ $response == '' ]] ; then
-    echo "CRITICAL - Not possible to get data from $hostname"
+    echo "CRITICAL - Could not connect to server $hostname"
     exit $ST_CR
 else
     get_vals
