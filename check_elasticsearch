@@ -74,6 +74,8 @@ print_help() {
     echo "    Password for elasticsearch. Turns on authentication mode when set"
     echo "  -a/--auth)"
     echo "    Turns on authentication mode with default credentials."
+    echo "  --auth-no-challenge)"
+    echo "    This will make Wget password and username work as prior to version 1.10.2."
     echo "  -c/--ca-certificate)"
     echo "    Uses the provided CA certificate."
     echo "  -C/--certificate)"
@@ -137,6 +139,9 @@ while test -n "$1"; do
             ;;
         --auth|-a)
             authentication="True"
+            ;;
+        --auth-no-challenge)
+            auth_no_challenge="True"
             ;;
         --ca-certificate|-c)
             ca_cert=$2
@@ -211,6 +216,10 @@ fi
 
 if [ "$verbose" != "True" ]; then
     wget_add_args+=("-q")
+fi
+
+if ["$auth_no_challenge" = "True" ]; then
+    wget_add_args+=("--auth-no-challenge")
 fi
 
 get_status() {
