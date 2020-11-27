@@ -218,7 +218,7 @@ if [ "$verbose" != "True" ]; then
     wget_add_args+=("-q")
 fi
 
-if ["$auth_no_challenge" = "True" ]; then
+if [ "$auth_no_challenge" = "True" ]; then
     wget_add_args+=("--auth-no-challenge")
 fi
 
