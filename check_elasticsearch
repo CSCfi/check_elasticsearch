@@ -41,7 +41,7 @@ carbon_key="system.:::name:::.cluster.app.elasticsearch.cluster"
 use_proxy="on"
 verbose="False"
 wget_add_args=()
-
+auth_no_challenge="False"
 
 print_version() {
     echo "$VERSION $AUTHOR"
