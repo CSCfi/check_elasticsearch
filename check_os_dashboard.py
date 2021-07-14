@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import argparse
 import requests
 from pprint import pprint as pprint
