@@ -10,8 +10,8 @@ def get_parser():
                     help='user to use if anonymus user is not allowed')
     parser.add_argument('--password', type=str, required=False,
                     help='password to use if anonymus user is not allowed')
-    parser.add_argument('--fqurl', type=str, required=True,
-                    help='FQURL to status page useally: https://example.org/api/status')
+    parser.add_argument('--url', type=str, required=True,
+                    help='URL to status page useally: https://example.org/api/status')
     parser.add_argument('--no-verify', action='store_false',
                     help='If ssl certificates should be verified')
     args = parser.parse_args()
@@ -25,9 +25,9 @@ def get_status(args):
     else:
         auth=()
     try:
-        r = requests.get(args.fqurl, verify=args.no_verify, auth=auth)
+        r = requests.get(args.url, verify=args.no_verify, auth=auth)
     except:
-        crit('Failed to connect to the server is, the fqurl correct?')
+        crit('Failed to connect to the server is, the url correct?')
     if r.status_code != 200:
         unknown('return code: ' + str(r.status_code))
     return r.json()
